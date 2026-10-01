@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Default API Base URL
-const API_BASE_URL = 'https://dramabos.live';
+const API_BASE_URL = process.env.DRAMABOS_API_URL || 'https://dramabos.live';
 
 // Available providers
 const providers = [

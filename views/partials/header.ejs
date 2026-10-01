@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DramaBos Web</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <!-- HLS.js for video streaming -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans min-h-screen flex flex-col">
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between">
+            <a href="/" class="text-2xl font-bold text-red-600 dark:text-red-500">DramaBos</a>
+
+            <form action="/search" method="GET" class="flex-1 max-w-md mx-4 hidden sm:flex">
+                <input type="text" name="q" placeholder="Search dramas..." class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="hidden" name="provider" value="<%= selectedProvider %>">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-r-lg">Search</button>
+            </form>
+
+            <nav class="flex items-center space-x-4">
+                <a href="/genre" class="hover:text-red-500 transition-colors">Genres</a>
+                <a href="/status" class="hover:text-red-500 transition-colors">Status</a>
+
+                <form action="" method="GET" id="providerForm">
+                    <select name="provider" onchange="document.getElementById('providerForm').submit()" class="bg-gray-100 dark:bg-gray-700 border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500">
+                        <% providers.forEach(function(prov) { %>
+                            <option value="<%= prov.slug %>" <%= selectedProvider === prov.slug ? 'selected' : '' %>><%= prov.name %></option>
+                        <% }); %>
+                    </select>
+                </form>
+            </nav>
+        </div>
+        <!-- Mobile Search -->
+        <div class="sm:hidden px-4 py-2 bg-gray-100 dark:bg-gray-800">
+             <form action="/search" method="GET" class="flex">
+                <input type="text" name="q" placeholder="Search dramas..." class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-l-lg px-4 py-2 focus:outline-none">
+                <input type="hidden" name="provider" value="<%= selectedProvider %>">
+                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-r-lg">🔍</button>
+            </form>
+        </div>
+    </header>
+    <main class="flex-1">

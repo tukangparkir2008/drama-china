@@ -1,0 +1,101 @@
+<%- include('partials/header') %>
+
+<div class="container mx-auto px-4 py-8">
+    <% if (typeof error !== 'undefined') { %>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (dramaData && dramaData.drama) { %>
+        <% const d = dramaData.drama; %>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8">
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/3 lg:w-1/4">
+                    <img src="<%= d.cover %>" alt="<%= d.title %>" class="w-full h-full object-cover">
+                </div>
+                <div class="p-6 md:w-2/3 lg:w-3/4 flex flex-col">
+                    <h1 class="text-3xl font-bold mb-2"><%= d.title %></h1>
+
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <% if(d.year) { %><span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm"><%= d.year %></span><% } %>
+                        <% if(d.status) { %><span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm uppercase"><%= d.status %></span><% } %>
+                        <% if(d.rating) { %><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-semibold">★ <%= d.rating %></span><% } %>
+                        <% if(d.episodeCount) { %><span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm"><%= d.episodeCount %> Episodes</span><% } %>
+                        <% if(d.language) { %><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"><%= d.language %></span><% } %>
+                    </div>
+
+                    <% if (d.genre) { %>
+                        <div class="mb-4 text-sm">
+                            <span class="text-gray-500">Genres:</span>
+                            <%= Array.isArray(d.genre) ? d.genre.join(', ') : d.genre %>
+                        </div>
+                    <% } %>
+
+                    <div class="mb-6 flex-1">
+                        <h3 class="text-lg font-semibold mb-2">Synopsis</h3>
+                        <p class="text-gray-600 dark:text-gray-300 leading-relaxed"><%= d.synopsis %></p>
+                    </div>
+
+                    <% if (episodesData && episodesData.episodes && episodesData.episodes.length > 0) { %>
+                        <div class="mt-auto">
+                            <!-- Try playing first episode -->
+                            <% let firstEp = episodesData.episodes[0].number || episodesData.episodes[0].id || 1; %>
+                            <a href="/play/<%= dramaId %>/<%= firstEp %>?provider=<%= selectedProvider %>"
+                               class="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform hover:scale-105">
+                                ▶ Play Episode 1
+                            </a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Episodes List -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-red-500 pl-3">Episodes</h2>
+            <% if (episodesData && episodesData.episodes && episodesData.episodes.length > 0) { %>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <% episodesData.episodes.forEach(function(ep, index) { %>
+                        <% const epIdentifier = ep.number || ep.id || (index + 1); %>
+                        <a href="/play/<%= dramaId %>/<%= epIdentifier %>?provider=<%= selectedProvider %>"
+                           class="relative group rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 aspect-video shadow-sm hover:shadow-md transition-all border-2 border-transparent hover:border-red-500">
+
+                            <% if (ep.thumbnail) { %>
+                                <img src="<%= ep.thumbnail %>" alt="Episode <%= epIdentifier %>" class="w-full h-full object-cover">
+                            <% } else { %>
+                                <div class="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500">No Image</div>
+                            <% } %>
+
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100">
+                                    <span class="text-white ml-1">▶</span>
+                                </div>
+                            </div>
+
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 p-2 flex justify-between items-center">
+                                <span class="text-white font-medium text-sm">Ep <%= epIdentifier %></span>
+                                <% if (ep.duration) { %><span class="text-gray-300 text-xs"><%= ep.duration %></span><% } %>
+                            </div>
+
+                            <% if (ep.locked) { %>
+                                <div class="absolute top-2 right-2 bg-yellow-500 text-xs text-black px-1.5 py-0.5 rounded shadow">
+                                    🔒 VIP
+                                </div>
+                            <% } %>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="text-gray-500">No episodes available at the moment.</p>
+            <% } %>
+        </div>
+
+    <% } else { %>
+         <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <p class="text-gray-500">Drama details not found.</p>
+        </div>
+    <% } %>
+</div>
+
+<%- include('partials/footer') %>

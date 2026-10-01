@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row gap-6">
+        <!-- Sidebar Filters -->
+        <div class="w-full md:w-64 flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-24">
+                <h3 class="text-lg font-bold mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">Categories</h3>
+                <ul class="space-y-2">
+                    <% const genres = ['romance', 'action', 'thriller', 'comedy', 'fantasy', 'horror', 'historical', 'modern']; %>
+                    <% genres.forEach(function(g) { %>
+                        <li>
+                            <a href="/genre?type=<%= g %>&provider=<%= selectedProvider %>"
+                               class="block px-3 py-2 rounded-md capitalize <%= currentGenre === g ? 'bg-red-500 text-white font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' %>">
+                                <%= g %>
+                            </a>
+                        </li>
+                    <% }); %>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="flex-1">
+            <h1 class="text-2xl font-bold mb-6 capitalize border-l-4 border-red-500 pl-3"><%= currentGenre %> Dramas</h1>
+
+            <% if (typeof error !== 'undefined') { %>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <% if (results && results.dramas && results.dramas.length > 0) { %>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <% results.dramas.forEach(function(item) { %>
+                        <a href="/drama/<%= item.id %>?provider=<%= selectedProvider %>" class="group block relative rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow bg-white dark:bg-gray-800">
+                            <div class="aspect-[3/4] overflow-hidden relative bg-gray-200 dark:bg-gray-700">
+                                <img src="<%= item.cover %>" alt="<%= item.title %>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                    <% if (item.episodes) { %>
+                                        <span class="text-xs text-white bg-red-600 px-1.5 py-0.5 rounded"><%= item.episodes %> Eps</span>
+                                    <% } %>
+                                    <% if (item.rating) { %>
+                                        <span class="text-xs text-white bg-yellow-500 px-1.5 py-0.5 rounded ml-1">★ <%= item.rating %></span>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h3 class="font-semibold text-sm truncate group-hover:text-red-500 transition-colors"><%= item.title %></h3>
+                            </div>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <p class="text-gray-500">No dramas found in this category.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

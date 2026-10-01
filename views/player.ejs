@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DramaBos Player</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <style>
+        /* Setup strict snap scrolling for the reels experience */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Hide main body scroll */
+            background-color: #000;
+        }
+
+        .reels-container {
+            height: 100vh;
+            height: 100dvh; /* For mobile browsers */
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .reels-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reel-item {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+
+        /* Video element filling the screen but keeping aspect ratio */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This makes it look like reels */
+        }
+
+        /* Overlay UI */
+        .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            z-index: 10;
+        }
+
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="/drama/<%= dramaId %>?provider=<%= selectedProvider %>" class="text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition inline-flex items-center justify-center w-10 h-10">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+    </div>
+
+    <% if (error) { %>
+        <div class="reels-container flex items-center justify-center">
+            <div class="bg-red-900/80 text-white p-6 rounded-lg text-center m-4">
+                <h3 class="text-xl font-bold mb-2">Playback Error</h3>
+                <p><%= error %></p>
+                <a href="/drama/<%= dramaId %>?provider=<%= selectedProvider %>" class="inline-block mt-4 bg-white text-black px-4 py-2 rounded">Go Back</a>
+            </div>
+        </div>
+    <% } else { %>
+        <div class="reels-container" id="reelsContainer">
+
+            <%
+                // We want to render the current episode, and maybe prep next/prev
+                // For simplicity, let's inject data into JS and render dynamically
+                // or render all available episodes as DOM elements and lazy load HLS.
+                // Since there can be 80+ episodes, rendering all DOM elements is fine,
+                // but we only initialize HLS for the active one.
+
+                let startIndex = 0;
+                if (episodesData && episodesData.episodes) {
+                    startIndex = episodesData.episodes.findIndex(e => (e.number || e.id) == currentEp);
+                    if (startIndex === -1) startIndex = 0;
+                }
+            %>
+
+            <% if (episodesData && episodesData.episodes) { %>
+                <% episodesData.episodes.forEach((ep, index) => { %>
+                    <div class="reel-item" data-index="<%= index %>" data-ep="<%= ep.number || ep.id %>">
+                        <video
+                            id="video-<%= index %>"
+                            class="video-player"
+                            playsinline
+                            loop
+                            <% if (index === startIndex) { %>autoplay<% } %>
+                            <% if (ep.thumbnail) { %>poster="<%= ep.thumbnail %>"<% } %>
+                        ></video>
+
+                        <div class="overlay">
+                            <h2 class="text-lg font-bold text-white shadow-sm"><%= ep.title || `Episode ${ep.number || ep.id}` %></h2>
+                            <p class="text-sm text-gray-300">Swipe up/down to change episode</p>
+
+                            <!-- Controls placeholder -->
+                            <div class="mt-4 flex gap-4">
+                                <button onclick="togglePlayPause(this)" class="bg-white/20 hover:bg-white/40 p-2 rounded-full play-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                      <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Loading spinner -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none hidden loader" id="loader-<%= index %>">
+                            <div class="w-12 h-12 border-4 border-white/30 border-t-red-500 rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+
+        </div>
+
+        <script>
+            // Data injected from server
+            const provider = "<%= selectedProvider %>";
+            const dramaId = "<%= dramaId %>";
+            const baseUrl = "<%= API_BASE_URL %>";
+            const startIndex = <%= startIndex %>;
+
+            // Map to store HLS instances
+            const hlsInstances = {};
+
+            const container = document.getElementById('reelsContainer');
+            const reels = document.querySelectorAll('.reel-item');
+
+            // On load, scroll to the start index immediately
+            if (startIndex > 0 && reels[startIndex]) {
+                reels[startIndex].scrollIntoView();
+            }
+
+            // Function to fetch Stream URL via API dynamically
+            async function fetchStreamUrl(epId) {
+                try {
+                    let url = `${baseUrl}/${provider}/api/v1/play/${dramaId}/${epId}`;
+                    if (provider === 'shortmax') {
+                        url = `${baseUrl}/shortmax/api/v1/play/${epId}`;
+                    }
+                    const res = await fetch(url);
+                    const data = await res.json();
+
+                    if (data && data.streamUrl) {
+                        return data.streamUrl;
+                    }
+                    console.error("No stream URL in response:", data);
+                    return null;
+                } catch (e) {
+                    console.error("Failed to fetch stream URL", e);
+                    return null;
+                }
+            }
+
+            // Function to initialize player for a specific index
+            async function initPlayer(index) {
+                const reel = reels[index];
+                if (!reel) return;
+
+                const video = document.getElementById(`video-${index}`);
+                const epId = reel.getAttribute('data-ep');
+                const loader = document.getElementById(`loader-${index}`);
+
+                // If already initialized, just play
+                if (hlsInstances[index] || video.src) {
+                    video.play().catch(e => console.log("Autoplay prevented"));
+                    return;
+                }
+
+                loader.classList.remove('hidden');
+
+                const streamUrl = await fetchStreamUrl(epId);
+
+                if (!streamUrl) {
+                    loader.classList.add('hidden');
+                    return;
+                }
+
+                if (Hls.isSupported()) {
+                    const hls = new Hls({
+                        startLevel: -1, // Auto
+                        capLevelToPlayerSize: true
+                    });
+
+                    hls.loadSource(streamUrl);
+                    hls.attachMedia(video);
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        loader.classList.add('hidden');
+                        video.play().catch(e => console.log("Autoplay prevented", e));
+                    });
+
+                    hlsInstances[index] = hls;
+                }
+                else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // For Safari
+                    video.src = streamUrl;
+                    video.addEventListener('loadedmetadata', function() {
+                        loader.classList.add('hidden');
+                        video.play().catch(e => console.log("Autoplay prevented", e));
+                    });
+                }
+            }
+
+            function pauseAll() {
+                reels.forEach((r, i) => {
+                    const v = document.getElementById(`video-${i}`);
+                    if (v) v.pause();
+                });
+            }
+
+            // Intersection Observer to detect which reel is in view
+            const observerOptions = {
+                root: container,
+                rootMargin: '0px',
+                threshold: 0.6 // Trigger when 60% of the video is visible
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const index = parseInt(entry.target.getAttribute('data-index'));
+                    const video = document.getElementById(`video-${index}`);
+
+                    if (entry.isIntersecting) {
+                        // Play this video
+                        initPlayer(index);
+
+                        // Update URL silently
+                        const epId = entry.target.getAttribute('data-ep');
+                        history.replaceState(null, '', `/play/${dramaId}/${epId}?provider=${provider}`);
+
+                        // Preload adjacent episodes
+                        if (index + 1 < reels.length) initPlayer(index + 1); // Preload next
+                        if (index - 1 >= 0) initPlayer(index - 1); // Preload prev
+
+                    } else {
+                        // Pause when out of view
+                        if (video) video.pause();
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all reels
+            reels.forEach(reel => observer.observe(reel));
+
+            // Global play/pause toggle
+            window.togglePlayPause = function(btn) {
+                const reel = btn.closest('.reel-item');
+                const index = reel.getAttribute('data-index');
+                const video = document.getElementById(`video-${index}`);
+
+                if (video.paused) {
+                    video.play();
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" /></svg>`;
+                } else {
+                    video.pause();
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" /></svg>`;
+                }
+            };
+
+            // Allow tap to play/pause on video directly
+            document.querySelectorAll('.video-player').forEach(video => {
+                video.addEventListener('click', function(e) {
+                    const btn = this.parentElement.querySelector('.play-btn');
+                    if (btn) togglePlayPause(btn);
+                });
+            });
+
+        </script>
+    <% } %>
+</body>
+</html>

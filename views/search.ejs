@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Search Results for "<%= query %>"</h1>
+
+    <% if (typeof error !== 'undefined') { %>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (results && results.results && results.results.length > 0) { %>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <% results.results.forEach(function(item) { %>
+                <a href="/drama/<%= item.id || item.code %>?provider=<%= selectedProvider %>" class="group block relative rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow bg-white dark:bg-gray-800">
+                    <div class="aspect-[3/4] overflow-hidden relative bg-gray-200 dark:bg-gray-700">
+                        <img src="<%= item.cover || item.poster %>" alt="<%= item.title %>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            <% if (item.episodes) { %>
+                                <span class="text-xs text-white bg-red-600 px-1.5 py-0.5 rounded"><%= item.episodes %> Eps</span>
+                            <% } %>
+                            <% if (item.rating) { %>
+                                <span class="text-xs text-white bg-yellow-500 px-1.5 py-0.5 rounded ml-1">★ <%= item.rating %></span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-semibold text-sm truncate group-hover:text-red-500 transition-colors"><%= item.title %></h3>
+                        <% if(item.genre) { %><p class="text-xs text-gray-400 mt-1 truncate"><%= item.genre %></p><% } %>
+                    </div>
+                </a>
+            <% }); %>
+        </div>
+    <% } else if (query) { %>
+        <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h2 class="text-xl text-gray-500">No results found for "<%= query %>" on <%= selectedProvider %></h2>
+            <p class="mt-2 text-gray-400">Try searching for different keywords or switch to another provider.</p>
+        </div>
+    <% } %>
+</div>
+
+<%- include('partials/footer') %>
